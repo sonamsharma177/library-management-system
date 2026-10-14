@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ledger — Product Information Manager for WooCommerce</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+
+<!-- ====== CONNECT SUPABASE ======
+     Fill these two values to switch from demo data to your own database.
+     The anon key is safe to expose: row level security protects the data.
+     Never put the service_role key here. -->
+<script>
+window.PIM_CONFIG = {
+  SUPABASE_URL: "",       // e.g. "https://abcdxyz.supabase.co"
+  SUPABASE_ANON_KEY: "",  // Project Settings → API → anon public key
+  STORE_URL: "https://shop.example.com"
+};
+</script>
+
+<style>
+:root{
+  color-scheme: light;
+  --bg:#F4F6F1; --surface:#FFFFFF; --ink:#15231E; --muted:#58675F; --line:#DAE0D6;
+  --accent:#0E6B53; --accent-ink:#FFFFFF; --accent-soft:#DDF0E8;
+  --warn:#85560A; --warn-soft:#FBEFD0; --bad:#B3261E; --bad-soft:#FBE3E0; --info:#1D5FB8; --info-soft:#DDE9FA;
+  --display:"Schibsted Grotesk","Trebuchet MS",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#0F1A16; --surface:#17251F; --ink:#E6EFEA; --muted:#9DB0A7; --line:#28392F;
+    --accent:#5FD1A8; --accent-ink:#05241A; --accent-soft:#1B3A2E;
+    --warn:#F0C25A; --warn-soft:#3A2F10; --bad:#FF8F85; --bad-soft:#40201F; --info:#7DB2FF; --info-soft:#1F3560;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#0F1A16; --surface:#17251F; --ink:#E6EFEA; --muted:#9DB0A7; --line:#28392F;
+  --accent:#5FD1A8; --accent-ink:#05241A; --accent-soft:#1B3A2E;
+  --warn:#F0C25A; --warn-soft:#3A2F10; --bad:#FF8F85; --bad-soft:#40201F; --info:#7DB2FF; --info-soft:#1F3560;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 70px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15;letter-spacing:-.01em}
+h1{font-size:30px;font-weight:700}h2{font-size:19px;font-weight:700}h3{font-size:15px;font-weight:700}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:22px;padding:0 28px;height:58px}
+.brand{font:700 21px var(--display);display:flex;align-items:center;gap:9px;white-space:nowrap}
+.tabs{display:flex;gap:2px;overflow-x:auto;height:100%;align-items:stretch;flex:1}
+.tabs button{all:unset;box-sizing:border-box;cursor:pointer;padding:0 14px;display:flex;align-items:center;color:var(--muted);font-weight:500;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-1px}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
+.who{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:#2EBE8C;display:inline-block;margin-right:6px}
+.dot.demo{background:#E0A100}
+
+.demo-bar{background:var(--warn-soft);color:var(--warn);font-size:13.5px;padding:7px 28px}
+main{padding:28px 28px 70px;max-width:1240px;margin:0 auto;width:100%}
+.view{display:none}.view.on{display:block}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.head p{color:var(--muted);margin-top:4px;max-width:62ch}
+
+.btn{cursor:pointer;border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:8px;font-weight:600;font-size:14px;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.sm{padding:4px 10px;font-size:13px}
+.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+.strip{display:grid;grid-template-columns:repeat(5,1fr);border-top:2px solid var(--ink);border-bottom:1px solid var(--line);margin-bottom:22px}
+.strip div{padding:12px 16px 12px 0}.strip div+div{padding-left:16px;border-left:1px solid var(--line)}
+.strip small{display:block;color:var(--muted)}
+.strip b{font:700 25px/1.25 var(--display)}
+
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.field{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 11px;min-width:0;width:100%}
+.toolbar .field{width:auto}
+.field:focus{outline:2px solid var(--accent);outline-offset:1px}
+.field[disabled]{background:var(--bg);color:var(--muted)}
+textarea.field{min-height:84px;resize:vertical}
+.selbar{display:none;background:var(--accent-soft);padding:8px 12px;border-radius:8px;margin-bottom:10px;align-items:center;gap:12px}
+.selbar.on{display:flex}
+
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:13px;color:var(--muted);font-weight:500;padding:8px 10px;border-bottom:1px solid var(--ink)}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr[data-act]{cursor:pointer}
+tbody tr[data-act]:hover{background:var(--accent-soft)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+.muted{color:var(--muted)}.small{font-size:13px}
+.sku{font:500 12.5px var(--mono);color:var(--muted)}
+.empty{color:var(--muted);padding:22px 0}
+
+.pcell{display:flex;gap:11px;align-items:center;min-width:220px}
+.thumb{position:relative;width:38px;height:38px;border-radius:8px;display:grid;place-items:center;color:#fff;font:700 13px var(--display);flex:none;overflow:hidden}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.bar{display:inline-block;width:84px;height:8px;border-radius:4px;background:var(--line);vertical-align:middle;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:4px}
+.bar i.full{background:#12A07F}.bar i.mid{background:#D9A021}.bar i.low{background:#D8564B}
+.pct{font-size:13px;margin-left:8px;font-variant-numeric:tabular-nums}
+
+.chip{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.chip.ok{background:var(--accent-soft);color:var(--accent)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.info{background:var(--info-soft);color:var(--info)}
+.chip.neutral{background:var(--line);color:var(--muted)}
+
+.edit{display:grid;grid-template-columns:1fr 330px;gap:34px;align-items:start}
+.sec{padding:0 0 22px;margin-bottom:22px;border-bottom:1px solid var(--line)}
+.sec h2{margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.f{display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--muted);min-width:0}
+.f.wide{grid-column:1/-1}
+.f .help{font-size:12.5px}
+.f .unitwrap{display:flex;gap:6px;align-items:center}
+.f .unit{color:var(--muted);font-size:13px}
+.multi{display:flex;gap:6px 14px;flex-wrap:wrap;padding:6px 0}
+.multi label{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:14px}
+.imgrow{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px}
+.side{position:sticky;top:78px;border-left:1px solid var(--line);padding-left:26px}
+.side h3{margin:0 0 8px}
+.checks{list-style:none;padding:0;margin:12px 0 18px}
+.checks li{display:flex;gap:9px;padding:4px 0;font-size:14px}
+.checks li b{font-weight:600}
+.tick{width:18px;height:18px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:11px;font-weight:700;margin-top:2px}
+.tick.y{background:#12A07F;color:#fff}.tick.n{background:var(--bad-soft);color:var(--bad)}
+.orphan{background:var(--warn-soft);color:var(--warn);padding:8px 12px;border-radius:8px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px}
+
+.two{display:grid;grid-template-columns:1.2fr 1fr;gap:34px;align-items:start}
+.list button{all:unset;box-sizing:border-box;display:flex;justify-content:space-between;width:100%;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--line)}
+.list button:hover{background:var(--accent-soft)}
+.list button[aria-pressed="true"]{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.list button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.frm{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+.check{display:flex;gap:7px;align-items:center;color:var(--ink);font-size:14px}
+
+.conf{border:1px solid var(--bad);border-radius:10px;padding:14px 16px;margin-bottom:12px;background:var(--surface)}
+.conf table{margin:10px 0}
+.conf td,.conf th{padding:6px 8px}
+.feed{list-style:none;margin:0;padding:0;max-height:300px;overflow:auto}
+.feed li{display:grid;grid-template-columns:76px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.feed time{color:var(--muted);font-size:12.5px}
+.feed .l-warn{color:var(--warn)}.feed .l-error{color:var(--bad)}
+
+.doc p{max-width:70ch;margin-bottom:10px}
+.doc h2{margin:30px 0 10px}.doc h2:first-of-type{margin-top:0}
+.doc ul,.doc ol{max-width:70ch;padding-left:20px}.doc li{margin-bottom:6px}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin:12px 0 18px}
+.three div{border-top:2px solid var(--ink);padding-top:10px}
+.three h3{margin-bottom:5px}
+pre{background:#12201B;color:#DCEBE4;padding:14px 16px;border-radius:10px;overflow-x:auto;font:13px/1.55 var(--mono);margin:10px 0 16px}
+code{font-family:var(--mono);font-size:.88em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+pre code{background:none;padding:0}
+.diagram{overflow-x:auto;margin:10px 0 16px}.diagram svg{min-width:700px;width:100%;height:auto}
+.tn{fill:var(--ink);font:600 13px var(--body)}.ts{fill:var(--muted);font:12px var(--body)}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.5}.box.acc{fill:var(--accent-soft);stroke:var(--accent)}
+.arrow{stroke:var(--muted);stroke-width:1.5;fill:none}
+
+.login{position:fixed;inset:0;background:var(--bg);z-index:80;display:none;place-items:center;padding:20px}
+.login.on{display:grid}
+.login form{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:26px;width:min(380px,100%);display:grid;gap:12px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;opacity:0;pointer-events:none;transition:all .2s;z-index:90;max-width:min(560px,92vw);white-space:pre-line}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:900px){
+  header.top{padding:0 12px;gap:10px}.who span.who-name{display:none}
+  main{padding:20px 14px 70px}.demo-bar{padding:7px 14px}
+  .edit,.two,.three{grid-template-columns:1fr}
+  .side{position:static;border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:18px}
+  .strip{grid-template-columns:1fr 1fr}.strip div:nth-child(odd){padding-left:0;border-left:0}.strip div:nth-child(n+3){border-top:1px solid var(--line)}
+  .grid2,.frm{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="#0E6B53"/><path d="M7 8h12M7 13h12M7 18h8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>Ledger</div>
+  <nav class="tabs" aria-label="Main">
+    <button data-act="go" data-v="catalog" aria-current="page">Catalog</button>
+    <button data-act="go" data-v="attrs">Attributes</button>
+    <button data-act="go" data-v="cats">Categories</button>
+    <button data-act="go" data-v="sync">WooCommerce sync</button>
+    <button data-act="go" data-v="setup">Design &amp; setup</button>
+  </nav>
+  <div class="who"><span id="modebadge"></span><span class="who-name" id="whoname"></span><button class="btn sm" data-act="signout" id="signout" hidden>Sign out</button></div>
+</header>
+<div class="demo-bar" id="demobar" hidden>Demo mode: sample data held in memory. Add your Supabase URL and anon key to <code>PIM_CONFIG</code> at the top of this file to use a real database.</div>
+
+<main>
+  <!-- CATALOG -->
+  <section class="view on" id="v-catalog">
+    <div class="head">
+      <div><h1>Catalog</h1><p>Every product, its readiness and whether the store matches. A product can only go live once its data is complete.</p></div>
+      <button class="btn primary" data-act="new">New product</button>
+    </div>
+    <div class="strip" id="strip"></div>
+    <div class="toolbar">
+      <input class="field" id="f-q" type="search" placeholder="Search name or SKU" aria-label="Search products" style="min-width:220px">
+      <select class="field" id="f-cat" aria-label="Category"></select>
+      <select class="field" id="f-status" aria-label="Status"><option value="">Any status</option><option>draft</option><option>ready</option><option>published</option><option>archived</option></select>
+      <select class="field" id="f-sync" aria-label="Sync state"><option value="">Any sync state</option><option value="synced">In sync</option><option value="pending">Changes to push</option><option value="never">Not in store</option><option value="conflict">Conflict</option><option value="error">Error</option></select>
+    </div>
+    <div class="selbar" id="selbar"><b id="selcount"></b><button class="btn sm primary" data-act="pushsel">Push to WooCommerce</button><button class="btn sm" data-act="clearsel">Clear</button></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th style="width:34px"></th><th>Product</th><th>Category</th><th>Status</th><th>Completeness</th><th class="num">Price</th><th class="num">Stock</th><th>Store</th></tr></thead>
+      <tbody id="plist"></tbody></table></div>
+  </section>
+
+  <!-- EDITOR -->
+  <section class="view" id="v-edit"></section>
+
+  <!-- ATTRIBUTES -->
+  <section class="view" id="v-attrs">
+    <div class="head"><div><h1>Attributes</h1><p>Define each kind of product detail once: its type, allowed values and unit. Categories then choose which ones apply and which are required.</p></div><button class="btn primary" data-act="newdef">New attribute</button></div>
+    <div class="two">
+      <div class="tablewrap"><table><thead><tr><th>Attribute</th><th>Type</th><th>Used in</th></tr></thead><tbody id="dlist"></tbody></table></div>
+      <div id="dform"></div>
+    </div>
+  </section>
+
+  <!-- CATEGORIES -->
+  <section class="view" id="v-cats">
+    <div class="head"><div><h1>Categories</h1><p>A category decides which attributes its products carry. Linking a category to a WooCommerce category keeps the store tree in step.</p></div></div>
+    <div class="two">
+      <div><div class="list" id="clist"></div>
+        <div class="frm" style="grid-template-columns:1fr auto;align-items:end;margin-top:16px"><label class="f">New category<input class="field" id="nc-name" placeholder="e.g. Gift Sets"></label><button class="btn" data-act="addcat">Add category</button></div></div>
+      <div id="cdetail"></div>
+    </div>
+  </section>
+
+  <!-- SYNC -->
+  <section class="view" id="v-sync">
+    <div class="head"><div><h1>WooCommerce sync</h1><p>The PIM owns names, descriptions, prices, categories, attributes and images. WooCommerce owns stock. Changes in the store to PIM-owned fields are flagged as conflicts instead of being overwritten.</p></div>
+      <div class="row"><button class="btn" data-act="pull">Pull from WooCommerce</button><button class="btn primary" data-act="pushpending" id="pushpending">Push pending</button></div></div>
+    <div id="syncbody"></div>
+  </section>
+
+  <!-- SETUP -->
+  <section class="view doc" id="v-setup">
+    <div class="head"><div><h1>Design &amp; setup</h1><p>Why the system is shaped this way, and how to run it on your own Supabase project.</p></div></div>
+    <p id="modeinfo" class="chip warn" style="display:block;max-width:none;border-radius:8px;padding:10px 14px;margin-bottom:22px"></p>
+
+    <h2>Analysis</h2>
+    <div class="three">
+      <div><h3>Catalog management</h3><p>One record per SKU with a lifecycle: draft, ready, published, archived. A product reaches "ready" only at 100% completeness, enforced in the database so no client can bypass it.</p></div>
+      <div><h3>Attribute handling</h3><p>Attributes are defined centrally (type, allowed values, unit), attached to categories and stored per product as validated JSON. Adding an attribute needs no schema change.</p></div>
+      <div><h3>Data synchronization</h3><p>Pushes send only products whose content hash changed. Stock flows back. Edits made in the store to PIM-owned fields raise a conflict for a person to resolve.</p></div>
+    </div>
+
+    <h2>How it fits together</h2>
+    <div class="diagram" role="img" aria-label="Browser talks to Supabase Postgres with row level security. Edge functions woo-push, woo-pull and woo-webhook exchange data with WooCommerce.">
+    <svg viewBox="0 0 860 230" xmlns="http://www.w3.org/2000/svg"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs>
+      <rect class="box" x="8" y="80" width="150" height="70" rx="8"/><text class="tn" x="83" y="112" text-anchor="middle">This web app</text><text class="ts" x="83" y="131" text-anchor="middle">supabase-js · anon key</text>
+      <rect class="box acc" x="250" y="80" width="190" height="70" rx="8"/><text class="tn" x="345" y="108" text-anchor="middle">Supabase Postgres</text><text class="ts" x="345" y="127" text-anchor="middle">tables · triggers · RLS</text><text class="ts" x="345" y="143" text-anchor="middle">validation + completeness</text>
+      <rect class="box acc" x="535" y="14" width="150" height="56" rx="8"/><text class="tn" x="610" y="38" text-anchor="middle">woo-push</text><text class="ts" x="610" y="55" text-anchor="middle">PIM → store</text>
+      <rect class="box acc" x="535" y="88" width="150" height="56" rx="8"/><text class="tn" x="610" y="112" text-anchor="middle">woo-pull</text><text class="ts" x="610" y="129" text-anchor="middle">stock · new products</text>
+      <rect class="box acc" x="535" y="162" width="150" height="56" rx="8"/><text class="tn" x="610" y="186" text-anchor="middle">woo-webhook</text><text class="ts" x="610" y="203" text-anchor="middle">signed, real time</text>
+      <rect class="box" x="750" y="80" width="104" height="70" rx="8"/><text class="tn" x="802" y="112" text-anchor="middle">WooCommerce</text><text class="ts" x="802" y="131" text-anchor="middle">REST v3</text>
+      <path class="arrow" d="M158 115H248" marker-end="url(#ah)"/><path class="arrow" d="M440 100L533 48" marker-end="url(#ah)"/><path class="arrow" d="M440 115H533" marker-end="url(#ah)"/><path class="arrow" d="M440 130L533 188" marker-end="url(#ah)"/>
+      <path class="arrow" d="M685 42L760 82" marker-end="url(#ah)"/><path class="arrow" d="M750 118H687" marker-end="url(#ah)"/><path class="arrow" d="M760 148L687 190" marker-end="url(#ah)"/></svg></div>
+
+    <h2>Data model (Supabase)</h2>
+    <ul>
+      <li><code>products</code>: core columns plus <code>attributes jsonb</code>, <code>images jsonb</code>, <code>completeness</code> and <code>content_hash</code>, both set by a trigger.</li>
+      <li><code>attribute_definitions</code> and <code>category_attributes</code>: what exists, and which categories use it (required or optional).</li>
+      <li><code>categories</code>: a tree with an optional <code>wc_category_id</code>.</li>
+      <li><code>wc_product_map</code>: the link to each WooCommerce product, the hash last pushed, a snapshot of store values and any open conflict.</li>
+      <li><code>sync_jobs</code>, <code>sync_log</code>, <code>product_history</code>: what ran, what happened to each product, and who changed what.</li>
+      <li>Roles in <code>profiles</code>: admin (everything), editor (products), viewer (read only). Sync tables are written only by edge functions.</li>
+    </ul>
+
+    <h2>Run it on your Supabase project</h2>
+    <ol>
+      <li>Create a project at supabase.com and install the Supabase CLI.</li>
+      <li>From the project folder: <code>supabase link --project-ref YOUR_REF</code>, then <code>supabase db push</code> to apply the migrations. Optionally run <code>supabase/seed.sql</code> in the SQL editor for sample data.</li>
+      <li>Create a WooCommerce REST key (Read/Write) and store the secrets:
+<pre><code>supabase secrets set WC_URL=https://shop.example.com WC_KEY=ck_xxx WC_SECRET=cs_xxx \
+  WC_WEBHOOK_SECRET=long-random-string CRON_SECRET=another-random-string</code></pre></li>
+      <li>Deploy the functions: <code>supabase functions deploy woo-push woo-pull woo-webhook</code></li>
+      <li>In WooCommerce add a webhook for <code>Product created</code>, <code>Product updated</code> and <code>Product deleted</code> pointing to <code>https://YOUR_REF.supabase.co/functions/v1/woo-webhook</code> with the same secret.</li>
+      <li>In Supabase Authentication add your users. The first user becomes admin; later users are viewers until an admin changes their role.</li>
+      <li>Paste your project URL and anon key into <code>PIM_CONFIG</code> in <code>web/index.html</code> and host the file anywhere static (or open it with <code>npx serve web</code>).</li>
+    </ol>
+    <p class="muted small">WooCommerce credentials live only in Supabase secrets. They never reach the browser or the database.</p>
+  </section>
+</main>
+
+<div class="login" id="login"><form id="loginform"><h2>Sign in to Ledger</h2><p class="muted small">Use an account created in your Supabase project.</p>
+  <label class="f">Email<input class="field" id="l-email" type="email" autocomplete="username" required></label>
+  <label class="f">Password<input class="field" id="l-pass" type="password" autocomplete="current-password" required></label>
+  <button class="btn primary" type="submit">Sign in</button><p class="small" id="l-err" style="color:var(--bad)" role="alert"></p></form></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+const CFG = window.PIM_CONFIG || {};
+const LIVE = !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const INR = new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0});
+const money = n => n == null || n === "" ? "—" : INR.format(n);
+const rel = iso => { if(!iso) return "never"; const m = Math.round((Date.now()-new Date(iso))/6e4); if(m<1) return "just now"; if(m<60) return m+" min ago"; if(m<1440) return Math.round(m/60)+" h ago"; return Math.round(m/1440)+" days ago"; };
+const clock = iso => new Date(iso).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
+const slugify = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+const filled = v => v !== undefined && v !== null && v !== "" && !(Array.isArray(v) && !v.length);
+const TYPES = ["text","textarea","number","boolean","select","multiselect","date"];
+const FIELD_LABEL = {name:"Name",description:"Description",short_description:"Short description",regular_price:"Price",sale_price:"Sale price"};
+
+const S = { cats:[], defs:[], catAttrs:[], products:[], maps:{}, jobs:[], logs:[], view:"catalog",
+  f:{q:"",cat:"",status:"",sync:""}, sel:new Set(), E:null, isNew:false, dirty:false, D:null, selCat:null, busy:false, loaded:false, user:null };
+
+/* ================= domain rules (mirrors the SQL functions) ================= */
+const prod = id => S.products.find(p => p.id === id);
+const catName = id => (S.cats.find(c => c.id === id) || {}).name || "—";
+function defsFor(catId){
+  return S.catAttrs.filter(x => x.category_id === catId).sort((a,b) => (a.position||0)-(b.position||0))
+    .map(x => ({def:S.defs.find(d => d.id === x.attribute_id), required:!!x.required})).filter(x => x.def);
+}
+function checks(p){
+  const out = [
+    {l:"Name", ok:!!(p.name||"").trim()}, {l:"SKU", ok:!!(p.sku||"").trim()},
+    {l:"Description of 50+ characters", ok:(p.description||"").trim().length >= 50},
+    {l:"Price above zero", ok:Number(p.price) > 0}, {l:"At least one image", ok:(p.images||[]).length > 0},
+    {l:"Category", ok:!!p.category_id}];
+  defsFor(p.category_id).filter(x => x.required).forEach(x => out.push({l:x.def.label, ok:filled((p.attributes||{})[x.def.code]), attr:true}));
+  return out;
+}
+const pct = p => { const c = checks(p); return Math.round(100*c.filter(x=>x.ok).length/c.length); };
+function validate(p){
+  const errs = [], allowed = defsFor(p.category_id).map(x => x.def);
+  Object.entries(p.attributes||{}).forEach(([k,v]) => {
+    const d = allowed.find(x => x.code === k);
+    if(!d){ errs.push(`Attribute "${k}" is not defined for this category`); return; }
+    if(v === null) return;
+    const bad = t => errs.push(`${d.label} must be ${t}`);
+    if(d.type==="number" && typeof v!=="number") bad("a number");
+    else if(d.type==="boolean" && typeof v!=="boolean") bad("true or false");
+    else if(d.type==="select" && !(typeof v==="string" && d.options.includes(v))) bad("one of: "+d.options.join(", "));
+    else if(d.type==="multiselect" && !(Array.isArray(v) && v.every(x => d.options.includes(x)))) bad("a list of: "+d.options.join(", "));
+    else if(d.type==="date" && !(typeof v==="string" && /^\d{4}-\d{2}-\d{2}$/.test(v))) bad("a date (YYYY-MM-DD)");
+    else if((d.type==="text"||d.type==="textarea") && typeof v!=="string") bad("text");
+  });
+  return errs;
+}
+function stable(v){ if(Array.isArray(v)) return "["+v.map(stable).join(",")+"]"; if(v && typeof v==="object") return "{"+Object.keys(v).sort().map(k => JSON.stringify(k)+":"+stable(v[k])).join(",")+"}"; return JSON.stringify(v); }
+function hashOf(p){ const s = stable({name:p.name,sku:p.sku,description:p.description,short_description:p.short_description,price:p.price,sale_price:p.sale_price,category_id:p.category_id,status:p.status,attributes:p.attributes,images:p.images}); let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))|0; return (h>>>0).toString(16); }
+function derive(p){ p.completeness = pct(p); p.content_hash = hashOf(p); p.updated_at = new Date().toISOString(); return p; }
+const PUSHABLE = ["ready","published","archived"];
+function syncOf(p){ const m = S.maps[p.id]; if(!m) return "never"; if(m.state==="conflict") return "conflict"; if(m.state==="error") return "error"; return m.last_synced_hash === p.content_hash ? "synced" : "pending"; }
+const SYNC = {never:["neutral","Not in store"],pending:["warn","Changes to push"],synced:["ok","In sync"],conflict:["bad","Conflict"],error:["bad","Error"]};
+const STAT = {draft:"neutral",ready:"info",published:"ok",archived:"neutral"};
+const chip = (c,t) => `<span class="chip ${c}">${esc(t)}</span>`;
+const pbar = n => `<span class="bar" aria-hidden="true"><i class="${n===100?"full":n>=60?"mid":"low"}" style="width:${n}%"></i></span><span class="pct">${n}%</span>`;
+function thumb(p){
+  const h = [...p.sku].reduce((a,c)=>a+c.charCodeAt(0),0)*37 % 360, u = p.images && p.images[0] && p.images[0].url;
+  return `<span class="thumb" style="background:hsl(${h} 42% 38%)">${esc((p.name||"?").replace(/[^A-Za-z0-9 ]/g,"").split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase())}${u?`<img src="${esc(u)}" alt="">`:""}</span>`;
+}
+document.addEventListener("error", e => { if(e.target && e.target.tagName==="IMG" && e.target.closest(".thumb")) e.target.remove(); }, true);
+function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("on"); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove("on"), Math.min(7000, 2400+m.length*30)); }
+
+/* ================= demo data layer ================= */
+let seq = 0; const uid = pre => pre + (++seq);
+const iso = d => new Date(Date.now()-d*864e5).toISOString();
+function seedDemo(){
+  const cats = [["Bath & Body",21],["Pantry",22],["Textiles",23],["Home & Kitchen",24]].map((c,i) => ({id:uid("c"),name:c[0],slug:slugify(c[0]),parent_id:null,wc_category_id:c[1],position:i}));
+  const C = n => cats.find(c => c.name===n).id;
+  const D = (code,label,type,options,unit,help) => ({id:uid("a"),code,label,type,options:options||[],unit:unit||null,help_text:help||"",wc_visible:true});
+  const defs = [D("weight_g","Net weight","number",null,"g","Weight without packaging"),D("ingredients","Ingredients","textarea",null,null,"List in order of quantity"),
+    D("skin_type","Skin type","multiselect",["Dry","Oily","Sensitive","All"]),D("organic","Certified organic","boolean"),D("shelf_life_months","Shelf life","number",null,"months"),
+    D("origin","Origin","text",null,null,"State or region of production"),D("material","Material","select",["Cotton","Linen","Jute","Cane","Clay"]),
+    D("color","Colour","multiselect",["Indigo","Ochre","Natural","Terracotta","Charcoal"]),D("care","Care instructions","textarea")];
+  const A = c => defs.find(d => d.code===c).id;
+  const catAttrs = []; const assign = (cat, list) => list.forEach(([c,req],i) => catAttrs.push({category_id:C(cat),attribute_id:A(c),required:req,position:i+1}));
+  assign("Bath & Body",[["weight_g",1],["ingredients",1],["skin_type",1],["organic",0],["origin",0]]);
+  assign("Pantry",[["weight_g",1],["ingredients",1],["shelf_life_months",1],["organic",0],["origin",0]]);
+  assign("Textiles",[["material",1],["color",1],["care",1],["origin",0]]);
+  assign("Home & Kitchen",[["material",1],["color",0]]);
+  const P = (sku,name,cat,price,status,stock,attrs,desc,img,age) => ({id:uid("p"),sku,name,slug:slugify(name),description:desc,short_description:"",category_id:C(cat),status,price,sale_price:null,stock_quantity:stock,attributes:attrs,images:img?[{url:"https://picsum.photos/seed/"+img+"/600",alt:name}]:[],updated_at:iso(age)});
+  const products = [
+    P("KOK-SOAP-3","Kokum Butter Soap Set (3)","Bath & Body",449,"published",64,{weight_g:300,ingredients:"Kokum butter, coconut oil, sodium hydroxide, essential oils",skin_type:["Dry","Sensitive"],organic:true,origin:"Goa"},"Hand-poured soap bars made with cold-pressed kokum butter. Gentle on dry and sensitive skin.","kokum",9),
+    P("LAV-BALM-30","Lavender Lip & Cuticle Balm","Bath & Body",260,"draft",0,{weight_g:30,skin_type:["All"]},"Beeswax balm scented with lavender.","",2),
+    P("CSH-RST-250","Roasted Cashew Nuts 250 g","Pantry",780,"published",120,{weight_g:250,ingredients:"Cashew nuts, sea salt",shelf_life_months:6,organic:false,origin:"Goa"},"Slow-roasted cashew nuts lightly salted with sea salt for a clean crunch.","cashew",14),
+    P("SPC-SMP-6","Spice Sampler (6 jars)","Pantry",520,"ready",48,{weight_g:180,ingredients:"Pepper, cardamom, cinnamon, clove, turmeric, cumin",shelf_life_months:12},"Six whole-spice jars blended for everyday Indian cooking, packed in glass jars.","spice",3),
+    P("COC-OIL-500","Cold-pressed Coconut Oil 500 ml","Pantry",360,"draft",30,{weight_g:460},"Cold-pressed coconut oil.","",1),
+    P("HNY-RAW-350","Raw Forest Honey 350 g","Pantry",430,"published",25,{weight_g:350,ingredients:"Raw forest honey",shelf_life_months:24,origin:"Western Ghats"},"Unheated raw honey collected from forest hives and strained once, nothing added.","honey",20),
+    P("HLM-SCARF","Handloom Cotton Scarf","Textiles",1290,"published",18,{material:"Cotton",color:["Indigo","Natural"],care:"Hand wash cold, dry in shade",origin:"Karnataka"},"Soft handloom cotton scarf woven by artisans and finished with natural dye.","scarf",7),
+    P("LIN-RUNNER","Linen Table Runner","Textiles",1490,"draft",12,{material:"Linen"},"Linen runner.","",5),
+    P("JUT-BAG-01","Jute Market Bag","Textiles",520,"published",40,{material:"Jute",color:["Natural","Ochre"],care:"Spot clean with a damp cloth",origin:"West Bengal"},"Sturdy woven jute market bag with cotton handles that holds up to eight kilos.","jute",11),
+    P("TRC-MUG-2","Terracotta Mug Pair","Home & Kitchen",640,"published",36,{material:"Clay",color:["Terracotta"]},"Wheel-thrown terracotta mugs that keep drinks cool in summer and warm in winter.","mug",16),
+    P("CNE-BSK-L","Cane Storage Basket (Large)","Home & Kitchen",980,"ready",9,{material:"Cane"},"Hand-woven cane basket with a sturdy rim, sized for blankets, toys or laundry.","basket",4),
+  ];
+  S.cats=cats; S.defs=defs; S.catAttrs=catAttrs; S.products=products; products.forEach(derive); products.forEach((p,i)=>{ p.updated_at = iso([9,2,14,3,1,20,7,5,11,16,4][i]); });
+  const maps = {}; const synced = (p, extra) => { maps[p.id] = Object.assign({product_id:p.id,wc_product_id:3000+Math.floor(Math.random()*900),state:"synced",last_synced_hash:p.content_hash,last_synced_at:iso(1),last_error:null,conflict:null}, extra||{}); };
+  const bySku = k => products.find(p => p.sku===k);
+  ["KOK-SOAP-3","CSH-RST-250","HLM-SCARF","JUT-BAG-01"].forEach(k => synced(bySku(k)));
+  synced(bySku("TRC-MUG-2"),{last_synced_hash:"stale"});
+  synced(bySku("HNY-RAW-350"),{state:"conflict",conflict:[{field:"regular_price",pim:"430.00",wc:"399.00"}],last_synced_hash:bySku("HNY-RAW-350").content_hash});
+  synced(bySku("SPC-SMP-6"),{state:"error",wc_product_id:null,last_synced_at:null,last_error:"WooCommerce 400: invalid or duplicated SKU"});
+  S.maps = maps;
+  S.logs = [{level:"warn",message:"HNY-RAW-350: price was changed in WooCommerce (₹399); push skipped",created_at:iso(.05)},{level:"info",message:"Pulled stock for 6 products",created_at:iso(.2)},{level:"info",message:"Pushed KOK-SOAP-3, CSH-RST-250, HLM-SCARF, JUT-BAG-01",created_at:iso(1)}];
+  S.jobs = [{id:"j1",kind:"pull",status:"success",total:6,succeeded:6,failed:0,started_at:iso(.2)},{id:"j2",kind:"push",status:"partial",total:6,succeeded:4,failed:2,started_at:iso(1)}];
+}
+const WC_NEW = [{sku:"CNE-TRAY-S",name:"Cane Serving Tray",cat:"Home & Kitchen",price:760,stock:15},{sku:"HNDL-SHAWL",name:"Handloom Wool Shawl",cat:"Textiles",price:2450,stock:7},{sku:"TURM-100",name:"Turmeric Powder 100 g",cat:"Pantry",price:140,stock:90}];
+const wait = ms => new Promise(r => setTimeout(r, ms));
+function addLog(level,message){ S.logs.unshift({level,message,created_at:new Date().toISOString()}); }
+function newJob(kind,total){ const j = {id:uid("j"),kind,status:"running",total,succeeded:0,failed:0,started_at:new Date().toISOString()}; S.jobs.unshift(j); return j; }
+
+const demo = {
+  async init(){ if(!S.loaded){ seedDemo(); S.loaded = true; } },
+  async load(){},
+  async saveProduct(p){
+    const errs = validate(p); if(errs.length) throw new Error("Invalid attributes:\n"+errs.join("\n"));
+    const c = pct(p); if(["ready","published"].includes(p.status) && c < 100) throw new Error(`${p.sku} is ${c}% complete. 100% is required for status "${p.status}". Complete the checklist first.`);
+    if(S.products.some(x => x.sku===p.sku && x.id!==p.id)) throw new Error(`SKU ${p.sku} already exists`);
+    const row = structuredClone(p); row.slug = row.slug || slugify(row.name); derive(row);
+    if(!row.id){ row.id = uid("p"); S.products.unshift(row); } else S.products[S.products.findIndex(x => x.id===row.id)] = row;
+    return row;
+  },
+  async saveDef(d){ const i = S.defs.findIndex(x => x.code===d.code); if(i>=0) S.defs[i] = Object.assign(S.defs[i], d); else S.defs.push(Object.assign({id:uid("a")}, d)); S.products.forEach(derive); },
+  async addCategory(c){ S.cats.push({id:uid("c"),name:c.name,slug:slugify(c.name),parent_id:null,wc_category_id:null,position:S.cats.length}); },
+  async setCatAttr(catId, attrId, v){
+    const i = S.catAttrs.findIndex(x => x.category_id===catId && x.attribute_id===attrId);
+    if(!v.in){ if(i>=0) S.catAttrs.splice(i,1); } else if(i>=0) S.catAttrs[i].required = v.required; else S.catAttrs.push({category_id:catId,attribute_id:attrId,required:v.required,position:S.catAttrs.length+1});
+    S.products.forEach(p => { p.completeness = pct(p); });
+  },
+  async push(ids, o={}){
+    const job = newJob("push", ids.length); let ok=0, skipped=0, failed=0; await wait(500);
+    for(const id of ids){ const p = prod(id), m = S.maps[id];
+      if(!PUSHABLE.includes(p.status)){ skipped++; addLog("warn",`${p.sku}: skipped, status is ${p.status}`); continue; }
+      if(m && m.state==="conflict" && !o.force){ skipped++; addLog("warn",`${p.sku}: skipped, open conflict`); continue; }
+      S.maps[id] = {product_id:id,wc_product_id:(m&&m.wc_product_id)||4000+Math.floor(Math.random()*900),state:"synced",last_synced_hash:p.content_hash,last_synced_at:new Date().toISOString(),last_error:null,conflict:null};
+      ok++; addLog("info",`${p.sku}: ${m&&m.wc_product_id?"updated":"created"} in WooCommerce`);
+    }
+    Object.assign(job,{status:failed?"partial":"success",succeeded:ok,failed,finished_at:new Date().toISOString()}); return {pushed:ok,skipped,failed};
+  },
+  async pull(){
+    const job = newJob("pull",0); await wait(600); const synced = S.products.filter(p => S.maps[p.id] && S.maps[p.id].wc_product_id); let n=0, conflicts=0, created=0;
+    synced.slice(0,4).forEach(p => { p.stock_quantity = Math.max(0, p.stock_quantity - (1+Math.floor(Math.random()*5))); n++; });
+    addLog("info",`Pulled stock for ${n} products`);
+    const cand = synced.find(p => syncOf(p)==="synced" && p.status==="published");
+    if(cand){ S.maps[cand.id].state="conflict"; S.maps[cand.id].conflict=[{field:"regular_price",pim:Number(cand.price).toFixed(2),wc:(Number(cand.price)-50).toFixed(2)}]; conflicts++; addLog("warn",`${cand.sku}: price was changed in WooCommerce; marked as conflict`); }
+    const nw = WC_NEW.find(w => !S.products.some(p => p.sku===w.sku));
+    if(nw){ const cid = S.cats.find(c => c.name===nw.cat).id; const p = {id:uid("p"),sku:nw.sku,name:nw.name,slug:slugify(nw.name),description:"",short_description:"",category_id:cid,status:"draft",price:nw.price,sale_price:null,stock_quantity:nw.stock,attributes:{},images:[],updated_at:""}; derive(p); S.products.unshift(p); S.maps[p.id]={product_id:p.id,wc_product_id:5000+Math.floor(Math.random()*900),state:"synced",last_synced_hash:p.content_hash,last_synced_at:new Date().toISOString(),conflict:null,last_error:null}; created++; addLog("info",`${p.sku}: imported from WooCommerce as a draft`); }
+    Object.assign(job,{status:"success",total:n+created,succeeded:n+created,finished_at:new Date().toISOString()}); return {updated:n,created,conflicts};
+  },
+  async resolve(id, choice){
+    const p = prod(id), m = S.maps[id];
+    if(choice==="keep_pim") return this.push([id],{force:true});
+    (m.conflict||[]).forEach(c => { if(c.field==="regular_price") p.price = Number(c.wc); if(c.field==="name") p.name = c.wc; if(c.field==="sale_price") p.sale_price = Number(c.wc)||null; });
+    derive(p); S.maps[id] = Object.assign(m,{state:"synced",conflict:null,last_synced_hash:p.content_hash,last_synced_at:new Date().toISOString()}); addLog("info",`${p.sku}: took the WooCommerce values`); return {pushed:0,skipped:0,failed:0};
+  },
+  async signOut(){}
+};
+
+/* ================= Supabase data layer ================= */
+let sb = null;
+const live = {
+  async init(){
+    await new Promise((res,rej) => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"; s.onload = res; s.onerror = () => rej(new Error("Could not load supabase-js")); document.head.appendChild(s); });
+    sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session){ await new Promise(res => { $("#login").classList.add("on"); $("#loginform").addEventListener("submit", async e => {
+      e.preventDefault(); const { error } = await sb.auth.signInWithPassword({email:$("#l-email").value,password:$("#l-pass").value});
+      if(error){ $("#l-err").textContent = error.message; return; } $("#login").classList.remove("on"); res(); }); }); }
+    const { data:{ user } } = await sb.auth.getUser(); const { data:prof } = await sb.from("profiles").select("role").eq("id",user.id).maybeSingle();
+    S.user = {email:user.email, role:(prof&&prof.role)||"viewer"};
+  },
+  async load(){
+    const q = [sb.from("categories").select("*").order("position"), sb.from("attribute_definitions").select("*").order("label"), sb.from("category_attributes").select("*"),
+      sb.from("products").select("*").order("updated_at",{ascending:false}), sb.from("wc_product_map").select("*"),
+      sb.from("sync_jobs").select("*").order("started_at",{ascending:false}).limit(15), sb.from("sync_log").select("*").order("created_at",{ascending:false}).limit(60)];
+    const r = await Promise.all(q); const bad = r.find(x => x.error); if(bad) throw new Error(bad.error.message);
+    [S.cats,S.defs,S.catAttrs,S.products] = r.slice(0,4).map(x => x.data);
+    S.maps = Object.fromEntries(r[4].data.map(m => [m.product_id,m])); S.jobs = r[5].data; S.logs = r[6].data;
+  },
+  async saveProduct(p){
+    const { id, completeness, content_hash, created_at, updated_at, updated_by, ...row } = p;
+    const { data, error } = await (id ? sb.from("products").update(row).eq("id",id) : sb.from("products").insert(row)).select().single();
+    if(error) throw new Error(error.message); return data;
+  },
+  async saveDef(d){ const { id, created_at, ...row } = d; const { error } = await sb.from("attribute_definitions").upsert(row,{onConflict:"code"}); if(error) throw new Error(error.message); },
+  async addCategory(c){ const { error } = await sb.from("categories").insert({name:c.name,slug:slugify(c.name),position:S.cats.length}); if(error) throw new Error(error.message); },
+  async setCatAttr(catId, attrId, v){
+    const { error } = v.in ? await sb.from("category_attributes").upsert({category_id:catId,attribute_id:attrId,required:v.required}) : await sb.from("category_attributes").delete().eq("category_id",catId).eq("attribute_id",attrId);
+    if(error) throw new Error(error.message);
+  },
+  async fn(name, body){ const { data, error } = await sb.functions.invoke(name,{body}); if(error){ let m = error.message; try{ const j = await error.context.json(); m = j.error || m; }catch(_){} throw new Error(m); } return data; },
+  push(ids, o={}){ return this.fn("woo-push",{product_ids:ids,force:!!o.force}); },
+  pull(){ return this.fn("woo-pull",{}); },
+  resolve(id, choice){ return choice==="keep_pim" ? this.fn("woo-push",{product_ids:[id],force:true}) : this.fn("woo-pull",{overwrite_product_ids:[id]}); },
+  async signOut(){ await sb.auth.signOut(); location.reload(); }
+};
+const api = LIVE ? live : demo;
+const canEdit = () => !LIVE || (S.user && ["admin","editor"].includes(S.user.role));
+const canAdmin = () => !LIVE || (S.user && S.user.role==="admin");
+
+/* ================= rendering ================= */
+function go(v){
+  S.view = v; document.querySelectorAll(".view").forEach(s => s.classList.toggle("on", s.id==="v-"+v));
+  document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-current", (b.dataset.v===v || (v==="edit"&&b.dataset.v==="catalog")) ? "page" : "false"));
+  render(); window.scrollTo({top:0});
+}
+function render(){
+  if(S.view==="catalog") rCatalog(); if(S.view==="edit") rEdit(); if(S.view==="attrs") rAttrs(); if(S.view==="cats") rCats(); if(S.view==="sync") rSync();
+}
+async function reload(){ await api.load(); render(); }
+
+function rCatalog(){
+  const ps = S.products, sy = ps.map(syncOf);
+  $("#strip").innerHTML = [["Products",ps.length],["Published",ps.filter(p=>p.status==="published").length],["Average completeness",ps.length?Math.round(ps.reduce((a,p)=>a+p.completeness,0)/ps.length)+"%":"—"],
+    ["Changes to push",ps.filter((p,i)=>PUSHABLE.includes(p.status)&&["pending","never","error"].includes(sy[i])).length],["Conflicts",sy.filter(x=>x==="conflict").length]].map(x=>`<div><small>${x[0]}</small><b>${x[1]}</b></div>`).join("");
+  const cur = $("#f-cat").value; $("#f-cat").innerHTML = '<option value="">All categories</option>'+S.cats.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join(""); $("#f-cat").value = cur;
+  const q = S.f.q.toLowerCase();
+  const rows = ps.filter(p => (!q || (p.name+" "+p.sku).toLowerCase().includes(q)) && (!S.f.cat || p.category_id===S.f.cat) && (!S.f.status || p.status===S.f.status) && (!S.f.sync || syncOf(p)===S.f.sync));
+  $("#plist").innerHTML = rows.length ? rows.map(p => { const s = syncOf(p); return `<tr data-act="edit" data-id="${p.id}" tabindex="0"><td><input type="checkbox" data-sel="${p.id}" ${S.sel.has(p.id)?"checked":""} aria-label="Select ${esc(p.sku)}"></td>
+    <td><div class="pcell">${thumb(p)}<div><b>${esc(p.name)}</b><div class="sku">${esc(p.sku)}</div></div></div></td><td>${esc(catName(p.category_id))}</td><td>${chip(STAT[p.status],p.status)}</td>
+    <td>${pbar(p.completeness)}</td><td class="num">${money(p.price)}</td><td class="num">${p.stock_quantity ?? 0}</td><td>${chip(SYNC[s][0],SYNC[s][1])}</td></tr>`; }).join("")
+    : `<tr><td colspan="8" class="empty">${ps.length?"No products match these filters. Clear a filter to see more.":"No products yet. Create one, or pull your existing store from the WooCommerce sync page."}</td></tr>`;
+  $("#selbar").classList.toggle("on", S.sel.size>0); $("#selcount").textContent = S.sel.size+" selected";
+}
+
+function attrInput(d, v){
+  const a = `data-a="${d.code}" data-t="${d.type}"`;
+  if(d.type==="textarea") return `<textarea class="field" ${a}>${esc(v??"")}</textarea>`;
+  if(d.type==="number") return `<div class="unitwrap"><input class="field" type="number" step="any" ${a} value="${v??""}">${d.unit?`<span class="unit">${esc(d.unit)}</span>`:""}</div>`;
+  if(d.type==="date") return `<input class="field" type="date" ${a} value="${esc(v??"")}">`;
+  if(d.type==="boolean") return `<select class="field" ${a}><option value="">Not set</option><option value="true" ${v===true?"selected":""}>Yes</option><option value="false" ${v===false?"selected":""}>No</option></select>`;
+  if(d.type==="select") return `<select class="field" ${a}><option value="">Not set</option>${d.options.map(o=>`<option ${v===o?"selected":""}>${esc(o)}</option>`).join("")}</select>`;
+  if(d.type==="multiselect") return `<div class="multi" data-multi>${d.options.map(o=>`<label><input type="checkbox" ${a} value="${esc(o)}" ${(v||[]).includes(o)?"checked":""}>${esc(o)}</label>`).join("")}</div>`;
+  return `<input class="field" ${a} value="${esc(v??"")}">`;
+}
+function rEdit(){
+  const E = S.E; if(!E) return go("catalog"); const rows = defsFor(E.category_id), ro = !canEdit();
+  const known = rows.map(r => r.def.code), orphans = Object.keys(E.attributes).filter(k => !known.includes(k));
+  $("#v-edit").innerHTML = `<div class="head"><div><button class="btn sm" data-act="back">Back to catalog</button><h1 style="margin-top:12px">${S.isNew?"New product":esc(E.name||E.sku)}</h1>${S.isNew?"":`<p class="sku">${esc(E.sku)}</p>`}</div></div>
+  <div class="edit"><div>
+    <div class="sec"><h2>Basics</h2><div class="grid2">
+      <label class="f">Name<input class="field" data-f="name" value="${esc(E.name)}" ${ro?"disabled":""}></label>
+      <label class="f">SKU<input class="field" data-f="sku" value="${esc(E.sku)}" ${ro?"disabled":""}></label>
+      <label class="f">Category<select class="field" data-f="category_id" ${ro?"disabled":""}><option value="">Choose a category</option>${S.cats.map(c=>`<option value="${c.id}" ${c.id===E.category_id?"selected":""}>${esc(c.name)}</option>`).join("")}</select></label>
+      <label class="f">Status<select class="field" data-f="status" ${ro?"disabled":""}>${["draft","ready","published","archived"].map(s=>`<option ${s===E.status?"selected":""}>${s}</option>`).join("")}</select></label>
+      <label class="f">Price (₹)<input class="field" type="number" min="0" step="0.01" data-f="price" value="${E.price??""}" ${ro?"disabled":""}></label>
+      <label class="f">Sale price (₹)<input class="field" type="number" min="0" step="0.01" data-f="sale_price" value="${E.sale_price??""}" ${ro?"disabled":""}></label>
+      <label class="f">Stock<input class="field" type="number" data-f="stock_quantity" value="${E.stock_quantity??0}" disabled><span class="help">Owned by WooCommerce and updated by sync.</span></label>
+    </div></div>
+    <div class="sec"><h2>Description</h2><div class="grid2">
+      <label class="f wide">Short description<input class="field" data-f="short_description" value="${esc(E.short_description)}" ${ro?"disabled":""}></label>
+      <label class="f wide">Description<textarea class="field" data-f="description" style="min-height:130px" ${ro?"disabled":""}>${esc(E.description)}</textarea><span class="help" id="desc-count"></span></label></div></div>
+    <div class="sec"><h2>Attributes</h2>
+      ${orphans.map(k=>`<div class="orphan"><span><b>${esc(k)}</b> is not part of this category's attribute set and will block saving.</span><button class="btn sm" data-act="rmorphan" data-k="${esc(k)}">Remove value</button></div>`).join("")}
+      ${E.category_id ? (rows.length ? `<div class="grid2">${rows.map(({def,required})=>`<label class="f ${def.type==="textarea"||def.type==="multiselect"?"wide":""}"><span>${esc(def.label)}${required?' <b style="color:var(--bad)" title="Required">*</b>':""}</span>${attrInput(def,E.attributes[def.code])}${def.help_text?`<span class="help">${esc(def.help_text)}</span>`:""}</label>`).join("")}</div>` : `<p class="muted">This category has no attributes yet. Add some on the Categories page.</p>`) : `<p class="muted">Choose a category to see the attributes this product needs.</p>`}
+    </div>
+    <div class="sec"><h2>Images</h2>
+      ${E.images.map((im,i)=>`<div class="imgrow"><input class="field" data-img="${i}" data-k="url" placeholder="https://… image address" value="${esc(im.url)}" aria-label="Image ${i+1} address"><input class="field" data-img="${i}" data-k="alt" placeholder="Alt text" value="${esc(im.alt||"")}" aria-label="Image ${i+1} alt text"><button class="btn sm" data-act="rmimg" data-i="${i}" aria-label="Remove image ${i+1}">Remove</button></div>`).join("") || '<p class="muted" style="margin-bottom:10px">No images yet.</p>'}
+      <button class="btn sm" data-act="addimg" ${ro?"disabled":""}>Add image</button><p class="help muted small" style="margin-top:6px">The first image is the main store image. ${LIVE?"Paste a public address, or upload to your Supabase storage bucket <code>product-images</code>.":""}</p></div>
+  </div><aside class="side" id="side"></aside></div>`;
+  updateSide(); descCount();
+}
+function descCount(){ const el = $("#desc-count"); if(el) el.textContent = (S.E.description||"").trim().length+" characters (50 needed for a complete listing)"; }
+function updateSide(){
+  const E = S.E, c = checks(E), n = pct(E), s = E.id ? syncOf(E) : "never", m = E.id ? S.maps[E.id] : null, ro = !canEdit();
+  const blocked = ["ready","published"].includes(E.status) && n<100;
+  $("#side").innerHTML = `<h3>Readiness</h3><div>${pbar(n)}</div>
+    ${blocked?`<p class="small" style="color:var(--bad);margin-top:8px">Status "${E.status}" needs 100%. Finish the items below or keep this as a draft.</p>`:""}
+    <ul class="checks">${c.map(x=>`<li><span class="tick ${x.ok?"y":"n"}" aria-hidden="true">${x.ok?"✓":"!"}</span><span>${x.ok?"":"<b>Missing: </b>"}${esc(x.l)}<span style="position:absolute;left:-9999px">${x.ok?" done":" missing"}</span></span></li>`).join("")}</ul>
+    <h3>WooCommerce</h3><p style="margin:6px 0">${chip(SYNC[s][0],SYNC[s][1])}</p>
+    <p class="small muted">${m&&m.wc_product_id?`Store product #${m.wc_product_id}. Last synced ${rel(m.last_synced_at)}.`:"Not created in the store yet."}</p>
+    ${m&&m.last_error?`<p class="small" style="color:var(--bad)">${esc(m.last_error)}</p>`:""}
+    <div class="row" style="margin-top:16px"><button class="btn primary" data-act="save" ${ro||S.busy?"disabled":""}>${S.isNew?"Create product":"Save changes"}</button>
+    ${E.id?`<button class="btn" data-act="push1" ${ro||S.busy?"disabled":""}>Push to WooCommerce</button>`:""}</div>
+    ${S.dirty?'<p class="small muted" style="margin-top:8px">You have unsaved changes.</p>':""}${ro?'<p class="small muted" style="margin-top:8px">Your role is read-only.</p>':""}`;
+}
+
+function rAttrs(){
+  $("#dlist").innerHTML = S.defs.map(d => { const used = S.catAttrs.filter(x=>x.attribute_id===d.id).map(x=>catName(x.category_id)); return `<tr data-act="editdef" data-id="${d.id}" tabindex="0"><td><b>${esc(d.label)}</b><div class="sku">${esc(d.code)}${d.unit?" · "+esc(d.unit):""}</div></td><td>${chip("neutral",d.type)}${d.options.length?`<div class="small muted">${esc(d.options.join(", "))}</div>`:""}</td><td class="small">${used.length?esc(used.join(", ")):'<span class="muted">Not used yet</span>'}</td></tr>`; }).join("") || '<tr><td colspan="3" class="empty">No attributes yet. Create the first one.</td></tr>';
+  const D = S.D; if(!D){ $("#dform").innerHTML = '<p class="muted">Select an attribute to edit it, or create a new one.</p>'; return; }
+  $("#dform").innerHTML = `<h2>${D.id?"Edit attribute":"New attribute"}</h2><div class="frm">
+    <label class="f">Label<input class="field" data-d="label" value="${esc(D.label)}"></label>
+    <label class="f">Code<input class="field" data-d="code" value="${esc(D.code)}" ${D.id?"disabled":""} placeholder="e.g. weight_g"><span class="help">Lowercase letters, numbers and underscores. Fixed after creation.</span></label>
+    <label class="f">Type<select class="field" data-d="type">${TYPES.map(t=>`<option ${t===D.type?"selected":""}>${t}</option>`).join("")}</select></label>
+    <label class="f">Unit<input class="field" data-d="unit" value="${esc(D.unit||"")}" placeholder="g, ml, cm"></label>
+    ${["select","multiselect"].includes(D.type)?`<label class="f" style="grid-column:1/-1">Allowed values<input class="field" data-d="options" value="${esc(D.options.join(", "))}" placeholder="Separate with commas"></label>`:""}
+    <label class="f" style="grid-column:1/-1">Help text<input class="field" data-d="help_text" value="${esc(D.help_text||"")}"></label>
+    <label class="check" style="grid-column:1/-1"><input type="checkbox" data-d="wc_visible" ${D.wc_visible?"checked":""}>Show on the WooCommerce product page</label></div>
+    <div class="row"><button class="btn primary" data-act="savedef" ${canAdmin()?"":"disabled"}>Save attribute</button><button class="btn" data-act="canceldef">Cancel</button></div>${canAdmin()?"":'<p class="small muted" style="margin-top:8px">Only admins can change attributes.</p>'}`;
+}
+
+function rCats(){
+  if(!S.selCat || !S.cats.some(c=>c.id===S.selCat)) S.selCat = S.cats[0] && S.cats[0].id;
+  $("#clist").innerHTML = S.cats.map(c => `<button data-act="selcat" data-id="${c.id}" aria-pressed="${c.id===S.selCat}"><span><b>${esc(c.name)}</b>${c.wc_category_id?`<span class="muted small"> · store #${c.wc_category_id}</span>`:'<span class="muted small"> · not linked yet</span>'}</span><span class="muted">${S.products.filter(p=>p.category_id===c.id).length} products</span></button>`).join("") || '<p class="empty">No categories yet.</p>';
+  const c = S.cats.find(x=>x.id===S.selCat); if(!c){ $("#cdetail").innerHTML=""; return; }
+  $("#cdetail").innerHTML = `<h2>${esc(c.name)}: attribute set</h2><p class="muted small" style="margin:4px 0 10px">Tick the details products in this category carry. Required ones must be filled before a product can be ready or published. Existing products are rechecked the next time they are saved.</p>
+    <table><thead><tr><th>Attribute</th><th>In set</th><th>Required</th></tr></thead><tbody>${S.defs.map(d => { const x = S.catAttrs.find(y=>y.category_id===c.id&&y.attribute_id===d.id); return `<tr><td>${esc(d.label)}<div class="sku">${esc(d.code)}</div></td><td><input type="checkbox" data-ca="in" data-cat="${c.id}" data-attr="${d.id}" ${x?"checked":""} ${canAdmin()?"":"disabled"} aria-label="${esc(d.label)} in set"></td><td><input type="checkbox" data-ca="req" data-cat="${c.id}" data-attr="${d.id}" ${x&&x.required?"checked":""} ${x&&canAdmin()?"":"disabled"} aria-label="${esc(d.label)} required"></td></tr>`; }).join("")}</tbody></table>`;
+}
+
+function rSync(){
+  const ps = S.products, conflicts = ps.filter(p=>syncOf(p)==="conflict"), queue = ps.filter(p => PUSHABLE.includes(p.status) && ["never","pending","error"].includes(syncOf(p)));
+  $("#pushpending").textContent = `Push pending (${queue.length})`; $("#pushpending").disabled = !queue.length || S.busy || !canEdit();
+  $("#syncbody").innerHTML = `<div class="strip" style="grid-template-columns:repeat(4,1fr)"><div><small>In store</small><b>${Object.values(S.maps).filter(m=>m.wc_product_id).length}</b></div><div><small>Waiting to push</small><b>${queue.length}</b></div><div><small>Conflicts</small><b>${conflicts.length}</b></div><div><small>Store</small><b style="font-size:15px;line-height:2">${esc((CFG.STORE_URL||"").replace(/^https?:\/\//,""))}</b></div></div>
+  ${conflicts.length?`<h2 style="margin-bottom:10px">Conflicts need a decision</h2>${conflicts.map(p=>{ const m = S.maps[p.id]; return `<div class="conf"><b>${esc(p.name)}</b> <span class="sku">${esc(p.sku)}</span><p class="small muted">Someone edited this product in WooCommerce after the last sync, so the PIM did not overwrite it.</p>
+    <table><thead><tr><th>Field</th><th>PIM</th><th>WooCommerce</th></tr></thead><tbody>${(m.conflict||[]).map(c=>`<tr><td>${esc(FIELD_LABEL[c.field]||c.field)}</td><td>${esc(c.pim||"(empty)")}</td><td>${esc(c.wc||"(empty)")}</td></tr>`).join("")}</tbody></table>
+    <div class="row"><button class="btn sm primary" data-act="resolve" data-id="${p.id}" data-choice="keep_pim" ${canEdit()?"":"disabled"}>Keep PIM values</button><button class="btn sm" data-act="resolve" data-id="${p.id}" data-choice="take_wc" ${canEdit()?"":"disabled"}>Take WooCommerce values</button></div></div>`; }).join("")}`:""}
+  <div class="two" style="margin-top:22px"><div><h2 style="margin-bottom:10px">Push queue</h2>${queue.length?`<table><thead><tr><th>Product</th><th>Why</th></tr></thead><tbody>${queue.map(p=>{ const s=syncOf(p), m=S.maps[p.id]; return `<tr data-act="edit" data-id="${p.id}" tabindex="0"><td><b>${esc(p.name)}</b><div class="sku">${esc(p.sku)}</div></td><td>${chip(SYNC[s][0],SYNC[s][1])}${s==="error"&&m.last_error?`<div class="small muted">${esc(m.last_error)}</div>`:""}</td></tr>`; }).join("")}</tbody></table>`:'<p class="empty">Everything that is ready or published matches the store.</p>'}
+    <h2 style="margin:24px 0 10px">Recent jobs</h2><table><thead><tr><th>Job</th><th>Result</th><th>Started</th></tr></thead><tbody>${S.jobs.slice(0,6).map(j=>`<tr><td>${esc(j.kind)}</td><td>${chip(j.status==="success"?"ok":j.status==="running"?"info":"warn",j.status)} <span class="small muted">${j.succeeded} done, ${j.failed} failed</span></td><td class="small">${rel(j.started_at)}</td></tr>`).join("")||'<tr><td colspan="3" class="empty">No sync jobs yet.</td></tr>'}</tbody></table></div>
+    <div><h2 style="margin-bottom:10px">Activity</h2><ul class="feed">${S.logs.slice(0,40).map(l=>`<li><time>${clock(l.created_at)}</time><span class="l-${esc(l.level)}">${esc(l.message)}</span></li>`).join("")||'<li class="muted">Nothing yet.</li>'}</ul></div></div>`;
+}
+
+/* ================= actions ================= */
+function openEditor(id){ S.isNew = !id; S.E = id ? structuredClone(prod(id)) : {id:null,sku:"",name:"",slug:"",description:"",short_description:"",category_id:null,status:"draft",price:null,sale_price:null,stock_quantity:0,attributes:{},images:[]}; S.dirty = false; go("edit"); }
+async function run(fn, okMsg){ if(S.busy) return; S.busy = true; render(); try{ const r = await fn(); if(okMsg) toast(typeof okMsg==="function"?okMsg(r):okMsg); } catch(e){ toast(e.message || String(e)); } finally{ S.busy = false; try{ await api.load(); }catch(_){} render(); } }
+async function doPush(ids, o){ await run(() => api.push(ids,o), r => `Pushed ${r.pushed}, skipped ${r.skipped}, failed ${r.failed}`); }
+async function saveProduct(){
+  const E = S.E; E.sku = E.sku.trim(); E.name = E.name.trim(); if(!E.name || !E.sku) return toast("Name and SKU are required");
+  if(S.busy) return; S.busy = true; updateSide();
+  try{ const saved = await api.saveProduct(E); await api.load(); S.E = structuredClone(prod(saved.id) || saved); S.isNew = false; S.dirty = false; toast("Saved"); }
+  catch(e){ toast(e.message); } finally{ S.busy = false; rEdit(); }
+}
+document.addEventListener("click", e => {
+  const selBox = e.target.closest("[data-sel]"); if(selBox){ e.stopPropagation(); selBox.checked ? S.sel.add(selBox.dataset.sel) : S.sel.delete(selBox.dataset.sel); return rCatalog(); }
+  const el = e.target.closest("[data-act]"); if(!el) return; const a = el.dataset.act, id = el.dataset.id;
+  if(a==="go") return go(el.dataset.v);
+  if(a==="new") return openEditor(null);
+  if(a==="edit") return openEditor(id);
+  if(a==="back") return go("catalog");
+  if(a==="save") return saveProduct();
+  if(a==="push1"){ if(S.dirty) return toast("Save your changes before pushing"); return doPush([S.E.id]); }
+  if(a==="pushsel"){ const ids = [...S.sel]; S.sel.clear(); return doPush(ids); }
+  if(a==="clearsel"){ S.sel.clear(); return rCatalog(); }
+  if(a==="pushpending") return doPush(S.products.filter(p => PUSHABLE.includes(p.status) && ["never","pending","error"].includes(syncOf(p))).map(p=>p.id));
+  if(a==="pull") return run(() => api.pull(), r => `Pull finished: ${r.updated ?? 0} updated, ${r.created ?? 0} imported, ${r.conflicts ?? 0} conflicts`);
+  if(a==="resolve") return run(() => api.resolve(id, el.dataset.choice), "Conflict resolved");
+  if(a==="addimg"){ S.E.images.push({url:"",alt:""}); S.dirty = true; return rEdit(); }
+  if(a==="rmimg"){ S.E.images.splice(+el.dataset.i,1); S.dirty = true; return rEdit(); }
+  if(a==="rmorphan"){ delete S.E.attributes[el.dataset.k]; S.dirty = true; return rEdit(); }
+  if(a==="editdef"){ const d = S.defs.find(x=>x.id===id); S.D = structuredClone(d); return rAttrs(); }
+  if(a==="newdef"){ S.D = {id:null,code:"",label:"",type:"text",options:[],unit:"",help_text:"",wc_visible:true}; if(S.view!=="attrs") return go("attrs"); return rAttrs(); }
+  if(a==="canceldef"){ S.D = null; return rAttrs(); }
+  if(a==="savedef"){ const D = S.D; D.label = D.label.trim(); if(!D.label) return toast("Give the attribute a label");
+    if(!/^[a-z][a-z0-9_]*$/.test(D.code)) return toast("Code must start with a letter and use only lowercase letters, numbers and underscores");
+    if(["select","multiselect"].includes(D.type) && !D.options.length) return toast("Add at least one allowed value");
+    return run(async () => { await api.saveDef(Object.assign({},D,{unit:D.unit||null,options:["select","multiselect"].includes(D.type)?D.options:[]})); S.D = null; }, "Attribute saved"); }
+  if(a==="selcat"){ S.selCat = id; return rCats(); }
+  if(a==="addcat"){ const n = $("#nc-name").value.trim(); if(!n) return toast("Enter a category name"); return run(async () => { await api.addCategory({name:n}); $("#nc-name").value = ""; }, "Category added"); }
+  if(a==="signout") return api.signOut();
+});
+document.addEventListener("keydown", e => { if((e.key==="Enter"||e.key===" ") && e.target.matches("tr[data-act]")){ e.preventDefault(); e.target.click(); } });
+
+function setAttr(el){
+  const E = S.E, code = el.dataset.a, t = el.dataset.t; let v;
+  if(t==="multiselect"){ v = [...el.closest("[data-multi]").querySelectorAll("input:checked")].map(i=>i.value); if(!v.length) v = undefined; }
+  else if(el.value==="") v = undefined; else if(t==="number") v = Number(el.value); else if(t==="boolean") v = el.value==="true"; else v = el.value;
+  if(v===undefined) delete E.attributes[code]; else E.attributes[code] = v;
+}
+function onEdit(e){
+  const el = e.target; if(!S.E) return;
+  if(el.dataset.f){ const f = el.dataset.f; let v = el.value; if(["price","sale_price","stock_quantity"].includes(f)) v = v==="" ? null : Number(v); if(f==="category_id") v = v || null;
+    if(f==="category_id" && e.type==="input") return; S.E[f] = v; S.dirty = true;
+    if(f==="category_id"){ const keep = defsFor(v).map(x=>x.def.code), drop = Object.keys(S.E.attributes).filter(k=>!keep.includes(k)); if(drop.length){ drop.forEach(k=>delete S.E.attributes[k]); toast("Removed values that do not apply to the new category: "+drop.join(", ")); } return rEdit(); }
+    if(f==="description") descCount(); return updateSide(); }
+  if(el.dataset.a){ setAttr(el); S.dirty = true; return updateSide(); }
+  if(el.dataset.img!==undefined){ S.E.images[+el.dataset.img][el.dataset.k] = el.value; S.dirty = true; return updateSide(); }
+}
+document.addEventListener("input", onEdit); document.addEventListener("change", e => {
+  onEdit(e);
+  const el = e.target;
+  if(el.dataset.d){ const k = el.dataset.d; S.D[k] = el.type==="checkbox" ? el.checked : k==="options" ? el.value.split(",").map(s=>s.trim()).filter(Boolean) : el.value; if(k==="type") rAttrs(); }
+  if(el.dataset.ca){ const cat = el.dataset.cat, attr = el.dataset.attr, x = S.catAttrs.find(y=>y.category_id===cat&&y.attribute_id===attr);
+    const v = el.dataset.ca==="in" ? {in:el.checked,required:false} : {in:true,required:el.checked}; run(() => api.setCatAttr(cat,attr,v)); }
+  if(el.id==="f-cat"){ S.f.cat = el.value; rCatalog(); } if(el.id==="f-status"){ S.f.status = el.value; rCatalog(); } if(el.id==="f-sync"){ S.f.sync = el.value; rCatalog(); }
+});
+document.addEventListener("input", e => { const el = e.target; if(el.dataset && el.dataset.d && el.type!=="checkbox"){ const k = el.dataset.d; S.D[k] = k==="options" ? el.value.split(",").map(s=>s.trim()).filter(Boolean) : el.value; }
+  if(el.id==="f-q"){ S.f.q = el.value; rCatalog(); } });
+window.addEventListener("beforeunload", e => { if(S.dirty){ e.preventDefault(); e.returnValue = ""; } });
+
+/* ================= start ================= */
+(async function start(){
+  $("#modebadge").innerHTML = LIVE ? '<span class="dot"></span>Supabase' : '<span class="dot demo"></span>Demo data';
+  $("#demobar").hidden = LIVE; $("#modeinfo").textContent = LIVE ? "Connected to your Supabase project: "+CFG.SUPABASE_URL : "This copy is running on in-memory demo data. Nothing is saved and no store is contacted.";
+  $("#modeinfo").className = "chip " + (LIVE ? "ok" : "warn");
+  try{
+    await api.init(); await api.load();
+    if(LIVE){ $("#whoname").textContent = S.user.email+" · "+S.user.role; $("#signout").hidden = false; }
+    render();
+  }catch(e){ document.querySelector("main").insertAdjacentHTML("afterbegin",`<p class="chip bad" style="display:block;border-radius:8px;padding:12px 16px;margin-bottom:16px">Could not start: ${esc(e.message)}. Check the Supabase URL and key, and that the migrations have been applied.</p>`); }
+})();
+})();
+</script>
+</body>
+</html>

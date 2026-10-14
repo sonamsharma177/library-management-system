@@ -1,0 +1,11 @@
+# Minimal Supabase CLI config. `supabase init` generates a fuller one; keep these function settings.
+project_id = "ledger-pim"
+
+# Authorization is checked inside each function (user JWT with editor/admin role, or x-cron-secret,
+# or a WooCommerce HMAC signature), so the gateway JWT check is switched off.
+[functions.woo-push]
+verify_jwt = false
+[functions.woo-pull]
+verify_jwt = false
+[functions.woo-webhook]
+verify_jwt = false

@@ -1,0 +1,21 @@
+-- OPTIONAL: run syncs on a schedule with pg_cron + pg_net.
+-- Rename this file to .sql after replacing the placeholders, or run it in the SQL editor.
+-- Enable the extensions first: Dashboard → Database → Extensions → pg_cron, pg_net.
+
+-- Push anything pending every 10 minutes
+select cron.schedule('ledger-woo-push', '*/10 * * * *', $$
+  select net.http_post(
+    url     := 'https://YOUR_REF.supabase.co/functions/v1/woo-push',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-secret', 'YOUR_CRON_SECRET'),
+    body    := '{}'::jsonb);
+$$);
+
+-- Pull stock and new store products every 15 minutes (safety net for missed webhooks)
+select cron.schedule('ledger-woo-pull', '*/15 * * * *', $$
+  select net.http_post(
+    url     := 'https://YOUR_REF.supabase.co/functions/v1/woo-pull',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-secret', 'YOUR_CRON_SECRET'),
+    body    := '{}'::jsonb);
+$$);
+
+-- To stop:  select cron.unschedule('ledger-woo-push');  select cron.unschedule('ledger-woo-pull');
